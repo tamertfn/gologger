@@ -78,13 +78,11 @@ func (l *Logger) logMessage(level, message string, options ...LogOptions) {
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	time.Sleep(1 * time.Second)
 
 	if opts.Process != "" {
 		logParts = append(logParts, opts.Process)
 		s.Suffix = strings.Join(logParts, " | ")
 	}
-	time.Sleep(1 * time.Second)
 
 	if !opts.StartTime.IsZero() {
 		currentTime := time.Now()
@@ -92,13 +90,11 @@ func (l *Logger) logMessage(level, message string, options ...LogOptions) {
 		logParts = append(logParts, duration)
 		s.Suffix = strings.Join(logParts, " | ")
 	}
-	time.Sleep(1 * time.Second)
 
 	if opts.User != "" {
 		logParts = append(logParts, opts.User)
 		s.Suffix = strings.Join(logParts, " | ")
 	}
-	time.Sleep(1 * time.Second)
 
 	logParts = append(logParts, message)
 	s.Suffix = strings.Join(logParts, " | ")
