@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/briandowns/spinner"
 )
 
 const (
@@ -21,7 +23,7 @@ type Logger struct {
 }
 
 /*
-New creates a new instance of Logger with Ldate|Ltime flags.
+New creates a new instance of Logger with no flags.
 
 Example usage:
 
@@ -43,7 +45,7 @@ Example usage:
 */
 func New() *Logger {
 	return &Logger{
-		logger: log.New(os.Stdout, "", log.LstdFlags),
+		logger: log.New(os.Stdout, "", 0),
 	}
 }
 
@@ -62,29 +64,49 @@ Parameters:
   - options: Optional parameters such as StartTime, Process, and User
 */
 func (l *Logger) logMessage(level, message string, options ...LogOptions) {
-	logParts := []string{fmt.Sprintf("[%s]", level)}
+
+	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond) // Build our new spinner
+	s.Start()
+
+	startingTime := time.Now()
+	s.Prefix = fmt.Sprintf("%s ", startingTime.Format("2006-01-02 15:04:05"))
+
+	logParts := []string{fmt.Sprintf(" [%s]", level)}
+	s.Suffix = logParts[0]
 
 	var opts LogOptions
 	if len(options) > 0 {
 		opts = options[0]
 	}
+	time.Sleep(1 * time.Second)
 
 	if opts.Process != "" {
 		logParts = append(logParts, opts.Process)
+		s.Suffix = strings.Join(logParts, " | ")
 	}
+	time.Sleep(1 * time.Second)
 
 	if !opts.StartTime.IsZero() {
 		currentTime := time.Now()
 		duration := fmt.Sprintf("%d ms", currentTime.Sub(opts.StartTime).Milliseconds())
 		logParts = append(logParts, duration)
+		s.Suffix = strings.Join(logParts, " | ")
 	}
+	time.Sleep(1 * time.Second)
 
 	if opts.User != "" {
 		logParts = append(logParts, opts.User)
+		s.Suffix = strings.Join(logParts, " | ")
 	}
+	time.Sleep(1 * time.Second)
 
 	logParts = append(logParts, message)
-	l.logger.Println("|", strings.Join(logParts, " | "))
+	s.Suffix = strings.Join(logParts, " | ")
+
+	closingTime := time.Now()
+	s.FinalMSG = fmt.Sprintf("%s ", closingTime.Format("2006-01-02 15:04:05")) + "✓" + strings.Join(logParts, " | ") + "\n"
+
+	s.Stop()
 }
 
 /*
