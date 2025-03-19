@@ -20,7 +20,27 @@ type Logger struct {
 	logger *log.Logger
 }
 
-// New creates a new instance of Logger with Ldate|Ltime flags.
+/*
+New creates a new instance of Logger with Ldate|Ltime flags.
+
+Example usage:
+
+	func main() {
+		log := logger.New()
+		startTime := time.Now()
+
+		log.Info(
+			"Information message",
+			logger.LogOptions{
+				StartTime: startTime,
+				User:      "Admin",
+				Process:   "MainProcess",
+			},
+		)
+		log.Warn("Warning message", logger.LogOptions{User: "Guest", Process: "WorkerProcess"})
+		log.Info("Message only")
+	}
+*/
 func New() *Logger {
 	return &Logger{
 		logger: log.New(os.Stdout, "", log.LstdFlags),
