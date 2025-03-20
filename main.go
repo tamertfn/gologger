@@ -3,6 +3,7 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -194,35 +195,75 @@ func (l *Logger) Panic(message string, options ...LogOptions) {
 /*
  */ /*Saves logs to file in JSON format
  */ /* @param "jsoner" logToJSON struct
+ */ /* @param "filePath" path to save the log file
  */
 func saveToFile(jsoner logToJSON, filePath string) error {
-	// Ensure directory exists
+	// Check directory
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		//return fmt.Errorf("failed to create directory: %w", err)
 		return err
 	}
 
-	// Open file with append mode
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	// Create file and initialize array if it doesn't exist
+	if !fileExists(filePath) {
+		file, err := os.Create(filePath)
+		if err != nil {
+			return err
+		}
+		_, err = file.WriteString("[\n")
+		if err != nil {
+			return err
+		}
+		file.Close()
+	}
+
+	// Open file
+	file, err := os.OpenFile(filePath, os.O_RDWR, 0644)
 	if err != nil {
-		//return fmt.Errorf("failed to open file: %w", err)
 		return err
 	}
 	defer file.Close()
 
-	// Convert to JSON
-	jsonData, err := json.Marshal(jsoner)
+	// Get file size
+	stat, err := file.Stat()
 	if err != nil {
-		//return fmt.Errorf("failed to marshal JSON: %w", err)
 		return err
 	}
 
-	// Write to file
-	if _, err := file.WriteString(string(jsonData) + "\n"); err != nil {
-		//return fmt.Errorf("failed to write to file: %w", err)
+	// Create JSON data
+	jsonData, err := json.MarshalIndent(jsoner, "", "  ")
+	if err != nil {
 		return err
 	}
 
-	return nil
+	if stat.Size() > 2 { // File has at least "[\n"
+		// Remove last ']' character
+		if err := file.Truncate(stat.Size() - 2); err != nil {
+			return err
+		}
+		// Add comma and newline
+		if _, err := file.Seek(0, io.SeekEnd); err != nil {
+			return err
+		}
+		if _, err := file.WriteString(",\n"); err != nil {
+			return err
+		}
+	}
+
+	// Append JSON data
+	if _, err := file.Seek(0, io.SeekEnd); err != nil {
+		return err
+	}
+	if _, err := file.Write(jsonData); err != nil {
+		return err
+	}
+
+	// Close array
+	_, err = file.WriteString("\n]")
+	return err
+}
+
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	return !os.IsNotExist(err)
 }
