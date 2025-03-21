@@ -46,6 +46,7 @@ type Logger struct {
 				LogFilePath: "./log.json",
 			},
 		)
+
 		log.Warn("Warning message", logger.LogOptions{Process: "WorkerProcess", User: "Guest", SaveToFile: true})
 		log.Info("Message only")
 	}
