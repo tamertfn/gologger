@@ -26,7 +26,7 @@ const (
  */
 type Logger struct {
 	logger  *log.Logger
-	FileLog interface{} // default file logging setting
+	FileLog any // default file logging setting
 }
 
 /*
@@ -95,7 +95,7 @@ type LogOptions struct {
 	StartTime time.Time
 	Process   string
 	User      string
-	FileLog   interface{} // can be bool or string
+	FileLog   any // can be bool or string
 }
 
 type logToJSON struct {
@@ -166,7 +166,12 @@ func (l *Logger) logMessage(level, message string, options ...LogOptions) {
 	jsoner.ClosingTime = closingTime.Format("2006-01-02 15:04:05")
 
 	// Handle file logging based on FileLog type
-	shouldSaveToFile, filePath := checkSaveLogOption(fileLogSetting)
+	shouldSaveToFile, filePath, err := checkSaveLogOption(fileLogSetting)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Error: %v", err)
+		logParts = append(logParts, errorMsg)
+		s.FinalMSG = closingTime.Format("2006-01-02 15:04:05") + " x" + strings.Join(logParts, " | ") + "\n"
+	}
 
 	if shouldSaveToFile {
 		if err := saveToFile(jsoner, filePath); err != nil {
@@ -298,12 +303,12 @@ func fileExists(filename string) bool {
 }
 
 // SetDefaultFileLog allows changing the default file logging behavior
-func (l *Logger) SetDefaultFileLog(fileLog interface{}) {
+func (l *Logger) SetDefaultFileLog(fileLog any) {
 	l.FileLog = fileLog
 }
 
 // checkLogOption checks FileLog setting and returns if should save and where to save
-func checkSaveLogOption(fileLogSetting interface{}) (shouldSave bool, path string) {
+func checkSaveLogOption(fileLogSetting any) (shouldSave bool, path string, err error) {
 	path = "./log.json" // default path
 
 	switch v := fileLogSetting.(type) {
@@ -314,9 +319,11 @@ func checkSaveLogOption(fileLogSetting interface{}) (shouldSave bool, path strin
 			shouldSave = true
 			path = v
 		}
+	default:
+		return false, "", fmt.Errorf("log will not be saved, invalid file log setting type: %T, expected bool or string", fileLogSetting)
 	}
 
-	return shouldSave, path
+	return shouldSave, path, nil
 }
 
 // Test runs all test cases for the logger
