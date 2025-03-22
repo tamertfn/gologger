@@ -183,6 +183,7 @@ func (l *Logger) logMessage(level, message string, options ...LogOptions) {
 			logParts = append(logParts, errorMsg)
 			s.FinalMSG = closingTime.Format("2006-01-02 15:04:05") + " x" + strings.Join(logParts, " | ") + "\n"
 		} else {
+			logParts = append(logParts, "Log saved!")
 			s.FinalMSG = closingTime.Format("2006-01-02 15:04:05") + " ✓" + strings.Join(logParts, " | ") + "\n"
 		}
 	} else {
